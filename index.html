@@ -3,1078 +3,788 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Options Simulator</title>
+<title>Options Strategy Simulator</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Syne:wght@400;600;700;800&display=swap');
-
-:root {
-  --bg:       #090b10;
-  --bg1:      #0e1118;
-  --bg2:      #141720;
-  --bg3:      #1c2030;
-  --border:   #1e2535;
-  --border2:  #2a3045;
-  --text:     #c8d0e0;
-  --muted:    #5a6380;
-  --accent:   #4fc3f7;
-  --accent2:  #7c4dff;
-  --green:    #69f0ae;
-  --red:      #ff5252;
-  --orange:   #ffab40;
-  --purple:   #ce93d8;
-  --teal:     #26c6da;
-  --mono:     'JetBrains Mono', monospace;
-  --sans:     'Syne', sans-serif;
+:root{
+  --bg:#090b10;--bg1:#0e1118;--bg2:#141720;--bg3:#1c2030;
+  --border:#1e2535;--border2:#2a3045;
+  --text:#c8d0e0;--muted:#5a6380;
+  --accent:#4fc3f7;--green:#69f0ae;--red:#ff5252;--orange:#ffab40;--purple:#ce93d8;--teal:#26c6da;
+  --mono:'JetBrains Mono',monospace;--sans:'Syne',sans-serif;
 }
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;}
+body{font-family:var(--mono);background:var(--bg);color:var(--text);font-size:11px;line-height:1.5;}
+body::before{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px);pointer-events:none;z-index:9999;}
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { height: 100%; overflow: hidden; }
+.app{display:flex;flex-direction:column;height:100vh;}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 16px;height:38px;background:var(--bg1);border-bottom:1px solid var(--border);flex-shrink:0;}
+.logo{font-family:var(--sans);font-size:13px;font-weight:800;letter-spacing:.05em;color:var(--accent);display:flex;align-items:center;gap:8px;}
+.logo-dot{width:6px;height:6px;background:var(--accent);border-radius:50%;box-shadow:0 0 8px var(--accent);}
+.topbar-right{display:flex;gap:14px;align-items:center;}
+.ticker{font-size:10px;color:var(--muted);letter-spacing:.08em;}
+.ticker span{color:var(--text);}
+.main{display:flex;flex:1;overflow:hidden;}
 
-body {
-  font-family: var(--mono);
-  background: var(--bg);
-  color: var(--text);
-  font-size: 11px;
-  line-height: 1.5;
-}
+/* ── SIDEBAR ── */
+.sidebar{width:282px;background:var(--bg1);border-right:1px solid var(--border);overflow-y:auto;flex-shrink:0;padding:10px;scrollbar-width:thin;scrollbar-color:var(--border2) transparent;}
+.sidebar::-webkit-scrollbar{width:4px;}.sidebar::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
 
-/* ─── SCANLINE OVERLAY ── */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(0,0,0,0.03) 2px,
-    rgba(0,0,0,0.03) 4px
-  );
-  pointer-events: none;
-  z-index: 9999;
-}
+.sec-lbl{font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin:12px 0 7px;padding-bottom:4px;border-bottom:1px solid var(--border);}
+.sec-lbl:first-child{margin-top:0;}
 
-/* ─── LAYOUT ── */
-.app { display: flex; flex-direction: column; height: 100vh; }
+.ctrl{margin-bottom:7px;}
+.ctrl-head{display:flex;justify-content:space-between;margin-bottom:3px;}
+.ctrl-name{color:var(--muted);font-size:10px;}.ctrl-val{color:var(--accent);font-size:10px;font-weight:600;}
+input[type=range]{-webkit-appearance:none;width:100%;height:2px;background:var(--border2);border-radius:1px;outline:none;}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:10px;height:10px;background:var(--accent);border-radius:50%;cursor:pointer;box-shadow:0 0 6px rgba(79,195,247,.5);}
+input[type=range]::-moz-range-thumb{width:10px;height:10px;background:var(--accent);border-radius:50%;cursor:pointer;border:none;}
 
-.topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 16px;
-  height: 38px;
-  background: var(--bg1);
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
-}
+/* NET CARD */
+.net-card{background:var(--bg2);border:1px solid var(--border2);border-radius:4px;padding:10px;margin-bottom:10px;}
+.net-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:2px;}
+.net-lbl{font-size:9px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;}
+.net-val{font-size:20px;font-weight:700;font-family:var(--sans);letter-spacing:-.02em;}
+.net-val.debit{color:var(--red);}.net-val.credit{color:var(--green);}.net-val.zero{color:var(--muted);}
+.net-desc{font-size:9px;color:var(--muted);margin-bottom:7px;}
+.net-greeks{display:grid;grid-template-columns:repeat(5,1fr);gap:3px;margin-bottom:6px;}
+.ng{background:var(--bg3);border-radius:2px;padding:3px 2px;text-align:center;}
+.ng .ng-l{font-size:8px;color:var(--muted);}.ng .ng-v{font-size:10px;font-weight:600;}
+.be-row{font-size:9px;color:var(--muted);}.be-row b{color:var(--orange);}
+.mp-row{font-size:9px;color:var(--muted);margin-top:2px;}.mp-row b{color:var(--green);}.mp-row i{color:var(--red);font-style:normal;}
 
-.logo {
-  font-family: var(--sans);
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: 0.05em;
-  color: var(--accent);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.logo-dot { width:6px; height:6px; background:var(--accent); border-radius:50%; box-shadow:0 0 8px var(--accent); }
+/* PRESETS */
+.preset-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:10px;}
+.preset-btn{padding:5px 4px;text-align:center;cursor:pointer;border:1px solid var(--border2);border-radius:3px;color:var(--muted);font-family:var(--mono);font-size:9px;background:var(--bg2);transition:all .12s;letter-spacing:.03em;user-select:none;}
+.preset-btn:hover{border-color:var(--accent);color:var(--accent);background:rgba(79,195,247,.05);}
 
-.topbar-right { display:flex; gap:16px; align-items:center; }
-.ticker { font-size:10px; color:var(--muted); letter-spacing:0.08em; }
-.ticker span { color:var(--text); }
+/* LEGS */
+.legs-wrap{margin-bottom:8px;}
+.leg-row{background:var(--bg2);border:1px solid var(--border);border-radius:3px;padding:7px 8px;margin-bottom:5px;}
+.leg-top{display:flex;align-items:center;gap:4px;margin-bottom:5px;}
+.leg-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.ltbs{display:flex;gap:2px;}
+.ltb{padding:2px 5px;font-size:9px;cursor:pointer;border:1px solid var(--border2);border-radius:2px;color:var(--muted);font-family:var(--mono);background:var(--bg3);transition:all .1s;user-select:none;}
+.ltb:hover{border-color:var(--accent);color:var(--accent);}
+.ltb.t-call{background:#0d2236;border-color:#4fc3f7;color:#4fc3f7;}
+.ltb.t-put{background:#1a0d2a;border-color:#ce93d8;color:#ce93d8;}
+.ltb.t-stock{background:#0d2619;border-color:#69f0ae;color:#69f0ae;}
+.ltb.d-long{background:#0a2619;border-color:#69f0ae;color:#69f0ae;}
+.ltb.d-short{background:#2a0d0d;border-color:#ff5252;color:#ff5252;}
+.leg-del{margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;line-height:1;padding:0 2px;font-family:var(--mono);}
+.leg-del:hover{color:var(--red);}
+.leg-bot{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:4px;}
+.lp{display:flex;flex-direction:column;gap:1px;}
+.lp label{font-size:8px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;}
+.lp input{width:100%;background:var(--bg3);border:1px solid var(--border2);color:var(--text);padding:3px 4px;border-radius:2px;font-family:var(--mono);font-size:10px;}
+.lp input:focus{outline:none;border-color:var(--accent);}
+.add-btn{width:100%;padding:7px;text-align:center;cursor:pointer;border:1px dashed var(--border2);border-radius:3px;color:var(--muted);font-family:var(--mono);font-size:10px;background:transparent;transition:all .12s;letter-spacing:.08em;}
+.add-btn:hover{border-color:var(--accent);color:var(--accent);}
 
-.main { display: flex; flex: 1; overflow: hidden; }
-
-/* ─── CONTROLS ── */
-.controls {
-  width: 260px;
-  background: var(--bg1);
-  border-right: 1px solid var(--border);
-  overflow-y: auto;
-  flex-shrink: 0;
-  padding: 12px;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border2) transparent;
-}
-.controls::-webkit-scrollbar { width: 4px; }
-.controls::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
-
-.section-label {
-  font-size: 9px;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  color: var(--muted);
-  margin: 12px 0 8px;
-  padding-bottom: 4px;
-  border-bottom: 1px solid var(--border);
-}
-.section-label:first-child { margin-top: 0; }
-
-/* Option type buttons */
-.type-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 10px; }
-.type-btn {
-  padding: 6px;
-  text-align: center;
-  cursor: pointer;
-  border: 1px solid var(--border2);
-  border-radius: 3px;
-  color: var(--muted);
-  font-family: var(--mono);
-  font-size: 11px;
-  font-weight: 500;
-  background: var(--bg2);
-  transition: all 0.15s;
-  letter-spacing: 0.05em;
-  user-select: none;
-}
-.type-btn:hover { border-color: var(--accent); color: var(--accent); }
-.type-btn.active.call  { background:#0d2a3d; border-color:var(--accent); color:var(--accent); box-shadow:0 0 10px rgba(79,195,247,0.15); }
-.type-btn.active.put   { background:#1a0d2a; border-color:var(--accent2); color:var(--accent2); box-shadow:0 0 10px rgba(124,77,255,0.15); }
-.type-btn.active.long  { background:#0a2619; border-color:var(--green); color:var(--green); box-shadow:0 0 10px rgba(105,240,174,0.12); }
-.type-btn.active.short { background:#2a0d0d; border-color:var(--red); color:var(--red); box-shadow:0 0 10px rgba(255,82,82,0.12); }
-
-/* Price card */
-.price-card {
-  background: var(--bg2);
-  border: 1px solid var(--border2);
-  border-radius: 4px;
-  padding: 10px;
-  margin-bottom: 10px;
-}
-.price-main {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 4px;
-}
-.price-lbl { font-size: 9px; letter-spacing: 0.12em; color: var(--muted); text-transform: uppercase; }
-.price-val { font-size: 22px; font-weight: 700; color: var(--accent); font-family: var(--sans); letter-spacing: -0.02em; }
-.price-sub { font-size: 10px; color: var(--muted); margin-bottom: 8px; }
-.mini-greeks { display: grid; grid-template-columns: repeat(5, 1fr); gap: 3px; }
-.mg { background: var(--bg3); border-radius: 2px; padding: 3px 2px; text-align: center; }
-.mg .mg-l { font-size: 8px; color: var(--muted); }
-.mg .mg-v { font-size: 10px; font-weight: 600; color: var(--text); }
-
-/* Sliders */
-.ctrl { margin-bottom: 7px; }
-.ctrl-head { display: flex; justify-content: space-between; margin-bottom: 3px; }
-.ctrl-name { color: var(--muted); font-size: 10px; }
-.ctrl-val { color: var(--accent); font-size: 10px; font-weight: 600; }
-
-input[type=range] {
-  -webkit-appearance: none;
-  width: 100%;
-  height: 2px;
-  background: var(--border2);
-  border-radius: 1px;
-  outline: none;
-}
-input[type=range]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 10px;
-  height: 10px;
-  background: var(--accent);
-  border-radius: 50%;
-  cursor: pointer;
-  box-shadow: 0 0 6px rgba(79,195,247,0.5);
-}
-input[type=range]::-moz-range-thumb {
-  width: 10px; height: 10px;
-  background: var(--accent);
-  border-radius: 50%;
-  cursor: pointer;
-  border: none;
-}
-
-/* ─── CHARTS ── */
-.charts { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
-
-.tab-bar {
-  display: flex;
-  background: var(--bg1);
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.tab-bar::-webkit-scrollbar { display: none; }
-
-.tab {
-  padding: 9px 14px;
-  cursor: pointer;
-  color: var(--muted);
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  border-bottom: 2px solid transparent;
-  transition: all 0.15s;
-  font-family: var(--mono);
-}
-.tab:hover { color: var(--text); }
-.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-
-.chart-area { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 14px; scrollbar-width: thin; scrollbar-color: var(--border2) transparent; }
-.chart-area::-webkit-scrollbar { width: 4px; }
-.chart-area::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
-
-.panel { display: none; }
-.panel.active { display: block; }
-
-.chart-box {
-  background: var(--bg1);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 10px 12px;
-  margin-bottom: 12px;
-}
-.chart-box-title {
-  font-size: 9px;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  color: var(--muted);
-  margin-bottom: 8px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-canvas { display: block; }
-
-.greek-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+/* CHARTS */
+.charts{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.tab-bar{display:flex;background:var(--bg1);border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto;scrollbar-width:none;}
+.tab-bar::-webkit-scrollbar{display:none;}
+.tab{padding:9px 13px;cursor:pointer;color:var(--muted);font-size:10px;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;border-bottom:2px solid transparent;transition:all .15s;font-family:var(--mono);}
+.tab:hover{color:var(--text);}.tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.chart-area{flex:1;overflow-y:auto;overflow-x:hidden;padding:12px;scrollbar-width:thin;scrollbar-color:var(--border2) transparent;}
+.chart-area::-webkit-scrollbar{width:4px;}.chart-area::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+.panel{display:none;}.panel.active{display:block;}
+.chart-box{background:var(--bg1);border:1px solid var(--border);border-radius:4px;padding:10px 12px;margin-bottom:12px;}
+.cbt{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;}
+canvas{display:block;}
+.greek-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.leg-legend-row{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:7px;}
+.ll{display:flex;align-items:center;gap:5px;font-size:9px;color:var(--muted);}
+.ll-line{width:22px;height:2px;border-radius:1px;}
 
 /* MC */
-.mc-row { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
-.mc-inp { display: flex; align-items: center; gap: 6px; }
-.mc-inp label { font-size: 10px; color: var(--muted); letter-spacing: 0.08em; text-transform: uppercase; }
-.mc-inp input {
-  width: 65px;
-  background: var(--bg2);
-  border: 1px solid var(--border2);
-  color: var(--text);
-  padding: 4px 7px;
-  border-radius: 3px;
-  font-family: var(--mono);
-  font-size: 11px;
-}
-.mc-inp input:focus { outline: none; border-color: var(--accent); }
+.mc-row{display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap;}
+.mc-inp{display:flex;align-items:center;gap:6px;}
+.mc-inp label{font-size:10px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;}
+.mc-inp input{width:65px;background:var(--bg2);border:1px solid var(--border2);color:var(--text);padding:4px 7px;border-radius:3px;font-family:var(--mono);font-size:11px;}
+.mc-inp input:focus{outline:none;border-color:var(--accent);}
+.run-btn{background:transparent;border:1px solid var(--accent);color:var(--accent);padding:6px 14px;border-radius:3px;cursor:pointer;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;transition:all .15s;}
+.run-btn:hover{background:rgba(79,195,247,.08);box-shadow:0 0 12px rgba(79,195,247,.2);}
+.mc-stats{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+.mc-stat{background:var(--bg2);border:1px solid var(--border2);border-radius:3px;padding:6px 12px;}
+.mc-stat .sl{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:2px;}
+.mc-stat .sv{font-size:14px;font-weight:700;font-family:var(--sans);}
 
-.run-btn {
-  background: transparent;
-  border: 1px solid var(--accent);
-  color: var(--accent);
-  padding: 6px 14px;
-  border-radius: 3px;
-  cursor: pointer;
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  transition: all 0.15s;
-}
-.run-btn:hover { background: rgba(79,195,247,0.08); box-shadow: 0 0 12px rgba(79,195,247,0.2); }
-
-.mc-stats { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
-.mc-stat {
-  background: var(--bg2);
-  border: 1px solid var(--border2);
-  border-radius: 3px;
-  padding: 6px 12px;
-}
-.mc-stat .sl { font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
-.mc-stat .sv { font-size: 14px; font-weight: 700; font-family: var(--sans); }
-
-/* Sanity */
-.sanity-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.sanity-item {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  padding: 10px;
-}
-.sanity-name { font-size: 10px; color: var(--text); margin-bottom: 3px; letter-spacing: 0.05em; }
-.sanity-val { font-size: 10px; color: var(--muted); margin-bottom: 4px; line-height: 1.6; }
-.sanity-ok  { font-size: 10px; color: var(--green); letter-spacing: 0.08em; }
-.sanity-fail { font-size: 10px; color: var(--red); letter-spacing: 0.08em; }
-.sanity-note { font-size: 9px; color: var(--muted); margin-top: 10px; line-height: 1.7; padding: 8px; background: var(--bg2); border: 1px solid var(--border); border-radius: 4px; }
+/* SANITY */
+.sanity-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.sanity-item{background:var(--bg2);border:1px solid var(--border);border-radius:4px;padding:10px;}
+.sanity-name{font-size:10px;color:var(--text);margin-bottom:3px;}
+.sanity-val{font-size:10px;color:var(--muted);margin-bottom:4px;line-height:1.6;white-space:pre;}
+.s-ok{font-size:10px;color:var(--green);}.s-fail{font-size:10px;color:var(--red);}
+.sanity-note{font-size:9px;color:var(--muted);margin-top:10px;line-height:1.7;padding:8px;background:var(--bg2);border:1px solid var(--border);border-radius:4px;}
 </style>
 </head>
 <body>
 <div class="app">
 
-  <!-- TOP BAR -->
-  <div class="topbar">
-    <div class="logo">
-      <div class="logo-dot"></div>
-      OPTIONS SIMULATOR
-    </div>
-    <div class="topbar-right">
-      <div class="ticker">MODEL <span>BLACK–SCHOLES</span></div>
-      <div class="ticker">GREEKS <span>ANALYTIC</span></div>
-      <div class="ticker">MC <span>GBM</span></div>
-    </div>
-  </div>
-
-  <div class="main">
-
-    <!-- LEFT: CONTROLS -->
-    <div class="controls">
-
-      <div class="section-label">Option Type & Direction</div>
-      <div class="type-grid">
-        <div class="type-btn call active" id="btn-call" onclick="setType('call')">CALL</div>
-        <div class="type-btn put"         id="btn-put"  onclick="setType('put')">PUT</div>
-        <div class="type-btn long active" id="btn-long"  onclick="setDir('long')">LONG</div>
-        <div class="type-btn short"       id="btn-short" onclick="setDir('short')">SHORT</div>
-      </div>
-
-      <div class="price-card">
-        <div class="price-main">
-          <span class="price-lbl">BS Price</span>
-          <span class="price-val" id="disp-price">–</span>
-        </div>
-        <div class="price-sub" id="disp-sub">Intrinsic – · Time val –</div>
-        <div class="mini-greeks" id="mini-greeks"></div>
-      </div>
-
-      <div class="section-label">Market Parameters</div>
-
-      <div class="ctrl">
-        <div class="ctrl-head"><span class="ctrl-name">Spot S₀</span><span class="ctrl-val" id="v-S">100.0</span></div>
-        <input type="range" id="S" min="10" max="250" step="0.5" value="100" oninput="sync('S')">
-      </div>
-      <div class="ctrl">
-        <div class="ctrl-head"><span class="ctrl-name">Strike K</span><span class="ctrl-val" id="v-K">100.0</span></div>
-        <input type="range" id="K" min="10" max="250" step="0.5" value="100" oninput="sync('K')">
-      </div>
-      <div class="ctrl">
-        <div class="ctrl-head"><span class="ctrl-name">Rate r</span><span class="ctrl-val" id="v-r">5.00%</span></div>
-        <input type="range" id="r" min="0" max="0.15" step="0.001" value="0.05" oninput="sync('r','pct')">
-      </div>
-      <div class="ctrl">
-        <div class="ctrl-head"><span class="ctrl-name">Div yield q</span><span class="ctrl-val" id="v-q">0.00%</span></div>
-        <input type="range" id="q" min="0" max="0.10" step="0.001" value="0.00" oninput="sync('q','pct')">
-      </div>
-      <div class="ctrl">
-        <div class="ctrl-head"><span class="ctrl-name">Volatility σ</span><span class="ctrl-val" id="v-sigma">20.00%</span></div>
-        <input type="range" id="sigma" min="0.01" max="1.0" step="0.005" value="0.20" oninput="sync('sigma','pct')">
-      </div>
-      <div class="ctrl">
-        <div class="ctrl-head"><span class="ctrl-name">Expiry T</span><span class="ctrl-val" id="v-T">1.00y</span></div>
-        <input type="range" id="T" min="0.01" max="3" step="0.01" value="1.0" oninput="sync('T','yr')">
-      </div>
-      <div class="ctrl">
-        <div class="ctrl-head"><span class="ctrl-name">Position size</span><span class="ctrl-val" id="v-N">1</span></div>
-        <input type="range" id="N" min="1" max="200" step="1" value="1" oninput="sync('N')">
-      </div>
-
-    </div>
-
-    <!-- RIGHT: CHARTS -->
-    <div class="charts">
-      <div class="tab-bar">
-        <div class="tab active" onclick="showTab(0)">Payoff</div>
-        <div class="tab"        onclick="showTab(1)">Price vs S</div>
-        <div class="tab"        onclick="showTab(2)">Greeks</div>
-        <div class="tab"        onclick="showTab(3)">Vol / Time</div>
-        <div class="tab"        onclick="showTab(4)">Monte Carlo</div>
-        <div class="tab"        onclick="showTab(5)">Sanity Checks</div>
-      </div>
-      <div class="chart-area">
-
-        <!-- TAB 0: PAYOFF -->
-        <div class="panel active" id="tab-0">
-          <div class="chart-box">
-            <div class="chart-box-title">
-              <span>Payoff &amp; Profit at Expiry vs Underlying Price</span>
-              <span style="color:var(--muted);font-size:9px">Blue = payoff · Green = profit (payoff − premium)</span>
-            </div>
-            <canvas id="c-payoff"></canvas>
-          </div>
-        </div>
-
-        <!-- TAB 1: PRICE -->
-        <div class="panel" id="tab-1">
-          <div class="chart-box">
-            <div class="chart-box-title">
-              <span>Option Price vs Underlying S</span>
-              <span style="color:var(--muted);font-size:9px">Blue = BS price · Dim = intrinsic · Dot = current S</span>
-            </div>
-            <canvas id="c-price"></canvas>
-          </div>
-        </div>
-
-        <!-- TAB 2: GREEKS -->
-        <div class="panel" id="tab-2">
-          <div class="greek-grid">
-            <div class="chart-box">
-              <div class="chart-box-title"><span>Delta Δ vs S</span><span style="color:var(--muted);font-size:9px">∂V/∂S</span></div>
-              <canvas id="c-delta"></canvas>
-            </div>
-            <div class="chart-box">
-              <div class="chart-box-title"><span>Gamma Γ vs S</span><span style="color:var(--muted);font-size:9px">∂²V/∂S² · always ≥ 0</span></div>
-              <canvas id="c-gamma"></canvas>
-            </div>
-            <div class="chart-box">
-              <div class="chart-box-title"><span>Vega ν vs S</span><span style="color:var(--muted);font-size:9px">∂V/∂σ per 1% move</span></div>
-              <canvas id="c-vega"></canvas>
-            </div>
-            <div class="chart-box">
-              <div class="chart-box-title"><span>Theta Θ vs S</span><span style="color:var(--muted);font-size:9px">∂V/∂t per calendar day</span></div>
-              <canvas id="c-theta"></canvas>
-            </div>
-          </div>
-          <div class="chart-box">
-            <div class="chart-box-title"><span>Rho ρ vs S</span><span style="color:var(--muted);font-size:9px">∂V/∂r per 1% rate move</span></div>
-            <canvas id="c-rho"></canvas>
-          </div>
-        </div>
-
-        <!-- TAB 3: VOL / TIME -->
-        <div class="panel" id="tab-3">
-          <div class="chart-box">
-            <div class="chart-box-title"><span>Option Price vs Volatility σ</span><span style="color:var(--muted);font-size:9px">Orange line = current σ</span></div>
-            <canvas id="c-vol"></canvas>
-          </div>
-          <div class="chart-box">
-            <div class="chart-box-title"><span>Option Price vs Time to Expiry T</span><span style="color:var(--muted);font-size:9px">Orange line = current T</span></div>
-            <canvas id="c-time"></canvas>
-          </div>
-        </div>
-
-        <!-- TAB 4: MONTE CARLO -->
-        <div class="panel" id="tab-4">
-          <div class="mc-row">
-            <div class="mc-inp">
-              <label>Paths N</label>
-              <input type="number" id="mc-paths" value="300" min="10" max="5000">
-            </div>
-            <div class="mc-inp">
-              <label>Steps M</label>
-              <input type="number" id="mc-steps" value="100" min="10" max="1000">
-            </div>
-            <button class="run-btn" onclick="runMC()">▶ Run MC</button>
-          </div>
-          <div class="mc-stats" id="mc-stats"></div>
-          <div class="chart-box">
-            <div class="chart-box-title"><span>GBM Sample Paths</span><span style="color:var(--muted);font-size:9px">Up to 80 displayed · Orange = strike</span></div>
-            <canvas id="c-paths"></canvas>
-          </div>
-          <div class="chart-box">
-            <div class="chart-box-title"><span>Distribution of Discounted Terminal Payoff</span><span style="color:var(--muted);font-size:9px">Green = profit · Red = OTM (zero payoff bucket)</span></div>
-            <canvas id="c-hist"></canvas>
-          </div>
-        </div>
-
-        <!-- TAB 5: SANITY -->
-        <div class="panel" id="tab-5">
-          <div class="sanity-grid" id="sanity-grid"></div>
-          <div class="sanity-note" id="sanity-note" style="margin-top:10px"></div>
-        </div>
-
-      </div>
-    </div>
+<div class="topbar">
+  <div class="logo"><div class="logo-dot"></div>OPTIONS STRATEGY SIMULATOR</div>
+  <div class="topbar-right">
+    <div class="ticker">MODEL <span>BLACK–SCHOLES</span></div>
+    <div class="ticker">GREEKS <span>ANALYTIC</span></div>
+    <div class="ticker">MC <span>GBM</span></div>
+    <div class="ticker">LEGS <span id="leg-count">1</span></div>
   </div>
 </div>
 
+<div class="main">
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sec-lbl">Global Parameters</div>
+  <div class="ctrl">
+    <div class="ctrl-head"><span class="ctrl-name">Spot S₀</span><span class="ctrl-val" id="v-S">100.0</span></div>
+    <input type="range" id="sl-S" min="10" max="300" step="0.5" value="100" oninput="syncG('S',this.value)">
+  </div>
+  <div class="ctrl">
+    <div class="ctrl-head"><span class="ctrl-name">Rate r</span><span class="ctrl-val" id="v-r">5.00%</span></div>
+    <input type="range" id="sl-r" min="0" max="0.15" step="0.001" value="0.05" oninput="syncG('r',this.value,'pct')">
+  </div>
+  <div class="ctrl">
+    <div class="ctrl-head"><span class="ctrl-name">Div yield q</span><span class="ctrl-val" id="v-q">0.00%</span></div>
+    <input type="range" id="sl-q" min="0" max="0.10" step="0.001" value="0" oninput="syncG('q',this.value,'pct')">
+  </div>
+
+  <div class="net-card">
+    <div class="net-top"><span class="net-lbl">Net Premium</span><span class="net-val" id="net-val">–</span></div>
+    <div class="net-desc" id="net-desc">–</div>
+    <div class="net-greeks" id="net-greeks"></div>
+    <div class="be-row" id="be-row"></div>
+    <div class="mp-row" id="mp-row"></div>
+  </div>
+
+  <div class="sec-lbl">Strategy Presets</div>
+  <div class="preset-grid" id="preset-grid"></div>
+
+  <div class="sec-lbl">Legs <span style="color:var(--border2);font-size:8px"> per-leg K · σ · T · N</span></div>
+  <div class="legs-wrap" id="legs-wrap"></div>
+  <button class="add-btn" onclick="addLeg()">+ Add Leg</button>
+</div>
+
+<!-- CHARTS -->
+<div class="charts">
+  <div class="tab-bar">
+    <div class="tab active" onclick="showTab(0)">Payoff</div>
+    <div class="tab"        onclick="showTab(1)">Price vs S</div>
+    <div class="tab"        onclick="showTab(2)">Greeks</div>
+    <div class="tab"        onclick="showTab(3)">Vol / Time</div>
+    <div class="tab"        onclick="showTab(4)">Monte Carlo</div>
+    <div class="tab"        onclick="showTab(5)">Sanity</div>
+  </div>
+  <div class="chart-area">
+
+    <div class="panel active" id="tab-0">
+      <div class="chart-box">
+        <div class="cbt">
+          <span>Net Payoff &amp; Profit at Expiry</span>
+          <span style="color:var(--muted);font-size:9px">Dim = per leg · White = net payoff · Green = net profit</span>
+        </div>
+        <div class="leg-legend-row" id="payoff-legend"></div>
+        <canvas id="c-payoff"></canvas>
+      </div>
+    </div>
+
+    <div class="panel" id="tab-1">
+      <div class="chart-box">
+        <div class="cbt"><span>Net BS Price vs Underlying S</span><span style="color:var(--muted);font-size:9px">Today · dim = per leg</span></div>
+        <canvas id="c-price"></canvas>
+      </div>
+    </div>
+
+    <div class="panel" id="tab-2">
+      <div class="greek-grid">
+        <div class="chart-box"><div class="cbt"><span>Net Δ Delta</span><span style="color:var(--muted);font-size:9px">∂V/∂S</span></div><canvas id="c-delta"></canvas></div>
+        <div class="chart-box"><div class="cbt"><span>Net Γ Gamma</span><span style="color:var(--muted);font-size:9px">∂²V/∂S²</span></div><canvas id="c-gamma"></canvas></div>
+        <div class="chart-box"><div class="cbt"><span>Net ν Vega</span><span style="color:var(--muted);font-size:9px">per 1% σ</span></div><canvas id="c-vega"></canvas></div>
+        <div class="chart-box"><div class="cbt"><span>Net Θ Theta</span><span style="color:var(--muted);font-size:9px">per day</span></div><canvas id="c-theta"></canvas></div>
+      </div>
+      <div class="chart-box"><div class="cbt"><span>Net ρ Rho</span><span style="color:var(--muted);font-size:9px">per 1% rate</span></div><canvas id="c-rho"></canvas></div>
+    </div>
+
+    <div class="panel" id="tab-3">
+      <div class="chart-box"><div class="cbt"><span>Net Price vs σ</span><span style="color:var(--muted);font-size:9px">All leg sigmas scaled proportionally · Orange = current</span></div><canvas id="c-vol"></canvas></div>
+      <div class="chart-box"><div class="cbt"><span>Net Price vs T</span><span style="color:var(--muted);font-size:9px">All leg T scaled proportionally · Orange = current</span></div><canvas id="c-time"></canvas></div>
+    </div>
+
+    <div class="panel" id="tab-4">
+      <div class="mc-row">
+        <div class="mc-inp"><label>Paths</label><input type="number" id="mc-paths" value="500" min="10" max="5000"></div>
+        <div class="mc-inp"><label>Steps</label><input type="number" id="mc-steps" value="100" min="10" max="1000"></div>
+        <div class="mc-inp"><label>T (yr)</label><input type="number" id="mc-T" value="1.0" min="0.01" max="5" step="0.01"></div>
+        <button class="run-btn" onclick="runMC()">▶ Run MC</button>
+      </div>
+      <div class="mc-stats" id="mc-stats"></div>
+      <div class="chart-box"><div class="cbt"><span>GBM Paths</span><span style="color:var(--muted);font-size:9px">≤80 displayed · strike lines per leg</span></div><canvas id="c-paths"></canvas></div>
+      <div class="chart-box"><div class="cbt"><span>Net P&amp;L Distribution</span><span style="color:var(--muted);font-size:9px">Green = profit · Red = loss</span></div><canvas id="c-hist"></canvas></div>
+    </div>
+
+    <div class="panel" id="tab-5">
+      <div class="sanity-grid" id="sanity-grid"></div>
+      <div class="sanity-note" id="sanity-note"></div>
+    </div>
+
+  </div>
+</div>
+</div>
+</div>
+
 <script>
-// ════════════════════════════════════════════════════════════
-// STATE
-// ════════════════════════════════════════════════════════════
-const st = { S:100, K:100, r:0.05, q:0.00, sigma:0.20, T:1.0, N:1, type:'call', dir:'long' };
-
-// ════════════════════════════════════════════════════════════
+// ══════════════════════════════════
 // MATH
-// ════════════════════════════════════════════════════════════
-function normPDF(x) {
-  return Math.exp(-0.5*x*x) / 2.5066282746310002;
+// ══════════════════════════════════
+function npdf(x){return Math.exp(-.5*x*x)/2.5066282746310002;}
+function ncdf(x){
+  if(x<-8)return 0;if(x>8)return 1;
+  const t=1/(1+0.2316419*Math.abs(x));
+  const p=t*(0.319381530+t*(-0.356563782+t*(1.781477937+t*(-1.821255978+t*1.330274429))));
+  const v=1-npdf(x)*p;return x>=0?v:1-v;
+}
+function bsp(S,K,r,q,sig,T,type){
+  if(T<1e-6||sig<1e-6)return type==='call'?Math.max(0,S-K):Math.max(0,K-S);
+  const sq=Math.sqrt(T);
+  const d1=(Math.log(S/K)+(r-q+.5*sig*sig)*T)/(sig*sq),d2=d1-sig*sq;
+  if(type==='call')return S*Math.exp(-q*T)*ncdf(d1)-K*Math.exp(-r*T)*ncdf(d2);
+  return K*Math.exp(-r*T)*ncdf(-d2)-S*Math.exp(-q*T)*ncdf(-d1);
+}
+function bsg(S,K,r,q,sig,T,type){
+  if(T<1e-5||sig<1e-4)return{delta:0,gamma:0,vega:0,theta:0,rho:0};
+  const sq=Math.sqrt(T);
+  const d1=(Math.log(S/K)+(r-q+.5*sig*sig)*T)/(sig*sq),d2=d1-sig*sq;
+  const phi=npdf(d1),eq=Math.exp(-q*T),er=Math.exp(-r*T);
+  const delta=type==='call'?eq*ncdf(d1):eq*(ncdf(d1)-1);
+  const gamma=eq*phi/(S*sig*sq);
+  const vega=S*eq*phi*sq/100;
+  const tb=-S*phi*sig*eq/(2*sq);
+  const theta=type==='call'?(tb-r*K*er*ncdf(d2)+q*S*eq*ncdf(d1))/365
+                            :(tb+r*K*er*ncdf(-d2)-q*S*eq*ncdf(-d1))/365;
+  const rho=type==='call'?K*T*er*ncdf(d2)/100:-K*T*er*ncdf(-d2)/100;
+  return{delta,gamma,vega,theta,rho};
 }
 
-// Abramowitz & Stegun 26.2.17, max error < 7.5e-8
-function normCDF(x) {
-  if (x < -8) return 0;
-  if (x >  8) return 1;
-  const t = 1 / (1 + 0.2316419 * Math.abs(x));
-  const poly = t * (0.319381530
-             + t * (-0.356563782
-             + t * (1.781477937
-             + t * (-1.821255978
-             + t * 1.330274429))));
-  const v = 1 - normPDF(x) * poly;
-  return x >= 0 ? v : 1 - v;
+// ══════════════════════════════════
+// STATE
+// ══════════════════════════════════
+const G={S:100,r:.05,q:.00};
+let legs=[],nextId=1;
+const COLORS=['#4fc3f7','#ce93d8','#69f0ae','#ffab40','#ff5252','#26c6da','#fff176','#f48fb1'];
+
+function mkLeg(type='call',dir='long',K=100,sigma=.20,T=1,N=1){
+  return{id:nextId++,type,dir,K,sigma,T,N};
 }
 
-function bsPrice(S, K, r, q, sigma, T, type) {
-  if (T <= 1e-6 || sigma <= 1e-6) {
-    return type === 'call' ? Math.max(0, S - K) : Math.max(0, K - S);
-  }
-  const sqT = Math.sqrt(T);
-  const d1 = (Math.log(S / K) + (r - q + 0.5 * sigma * sigma) * T) / (sigma * sqT);
-  const d2 = d1 - sigma * sqT;
-  if (type === 'call')
-    return S * Math.exp(-q * T) * normCDF(d1) - K * Math.exp(-r * T) * normCDF(d2);
-  else
-    return K * Math.exp(-r * T) * normCDF(-d2) - S * Math.exp(-q * T) * normCDF(-d1);
+// ── net calculations ──
+function legPay(l,s){
+  const sg=l.dir==='long'?1:-1;
+  if(l.type==='stock')return sg*(s-G.S)*l.N;
+  return sg*(l.type==='call'?Math.max(0,s-l.K):Math.max(0,l.K-s))*l.N;
 }
+function netPay(s){return legs.reduce((a,l)=>a+legPay(l,s),0);}
 
-function bsGreeks(S, K, r, q, sigma, T, type) {
-  if (T < 1e-5 || sigma < 1e-4)
-    return { delta: 0, gamma: 0, vega: 0, theta: 0, rho: 0 };
-  const sqT = Math.sqrt(T);
-  const d1 = (Math.log(S / K) + (r - q + 0.5 * sigma * sigma) * T) / (sigma * sqT);
-  const d2 = d1 - sigma * sqT;
-  const phi = normPDF(d1);
-  const eqT = Math.exp(-q * T), erT = Math.exp(-r * T);
-
-  const delta = type === 'call' ? eqT * normCDF(d1) : eqT * (normCDF(d1) - 1);
-  const gamma = eqT * phi / (S * sigma * sqT);
-  const vega  = S * eqT * phi * sqT / 100;  // per 1% σ
-
-  const thetaBase = -S * phi * sigma * eqT / (2 * sqT);
-  const theta = type === 'call'
-    ? (thetaBase - r * K * erT * normCDF(d2)  + q * S * eqT * normCDF(d1))  / 365
-    : (thetaBase + r * K * erT * normCDF(-d2) - q * S * eqT * normCDF(-d1)) / 365;
-
-  const rho = type === 'call'
-    ? K * T * erT * normCDF(d2)  / 100
-    : -K * T * erT * normCDF(-d2) / 100;
-
-  return { delta, gamma, vega, theta, rho };
+function legPrice(l,s){
+  const sg=l.dir==='long'?1:-1;
+  if(l.type==='stock')return sg*(s-G.S)*l.N;
+  return sg*bsp(s,l.K,G.r,G.q,l.sigma,l.T,l.type)*l.N;
 }
+function netPrice(s){return legs.reduce((a,l)=>a+legPrice(l,s),0);}
 
-// ════════════════════════════════════════════════════════════
-// CONTROLS
-// ════════════════════════════════════════════════════════════
-function sync(id, fmt) {
-  const v = parseFloat(document.getElementById(id).value);
-  st[id] = v;
-  const el = document.getElementById('v-' + id);
-  if (fmt === 'pct')  el.textContent = (v * 100).toFixed(2) + '%';
-  else if (fmt === 'yr') el.textContent = v.toFixed(2) + 'y';
-  else el.textContent = v % 1 === 0 ? v : v.toFixed(1);
-  update();
+function netPrem(){
+  return legs.reduce((a,l)=>{
+    if(l.type==='stock')return a;
+    const sg=l.dir==='long'?1:-1;
+    return a+sg*bsp(G.S,l.K,G.r,G.q,l.sigma,l.T,l.type)*l.N;
+  },0);
 }
-function setType(t) {
-  st.type = t;
-  document.getElementById('btn-call').className = 'type-btn call' + (t === 'call' ? ' active' : '');
-  document.getElementById('btn-put').className  = 'type-btn put'  + (t === 'put'  ? ' active' : '');
-  update();
-}
-function setDir(d) {
-  st.dir = d;
-  document.getElementById('btn-long').className  = 'type-btn long'  + (d === 'long'  ? ' active' : '');
-  document.getElementById('btn-short').className = 'type-btn short' + (d === 'short' ? ' active' : '');
-  update();
-}
-
-// ════════════════════════════════════════════════════════════
-// CHART UTILS
-// ════════════════════════════════════════════════════════════
-function getCanvas(id) {
-  const c = document.getElementById(id);
-  return { c, ctx: c.getContext('2d'), w: c.width, h: c.height };
-}
-
-const PAD_MAIN = { l: 58, r: 20, t: 20, b: 26 };
-const PAD_HALF = { l: 56, r: 12, t: 16, b: 22 };
-
-function buildAxes(ctx, w, h, pad, xMin, xMax, yMin, yMax) {
-  const pw = w - pad.l - pad.r;
-  const ph = h - pad.t - pad.b;
-  ctx.fillStyle = '#0e1118';
-  ctx.fillRect(0, 0, w, h);
-
-  // Grid lines
-  const nX = 5, nY = 5;
-  ctx.strokeStyle = '#1c2030'; ctx.lineWidth = 1;
-  for (let i = 0; i <= nY; i++) {
-    const y = pad.t + ph * i / nY;
-    ctx.beginPath(); ctx.moveTo(pad.l, y); ctx.lineTo(pad.l + pw, y); ctx.stroke();
-    const v = yMax - (yMax - yMin) * i / nY;
-    ctx.fillStyle = '#3a4260'; ctx.font = '9px JetBrains Mono, monospace';
-    ctx.textAlign = 'right';
-    ctx.fillText(fmtN(v), pad.l - 5, y + 3);
-  }
-  for (let i = 0; i <= nX; i++) {
-    const x = pad.l + pw * i / nX;
-    ctx.beginPath(); ctx.moveTo(x, pad.t); ctx.lineTo(x, pad.t + ph); ctx.stroke();
-    const v = xMin + (xMax - xMin) * i / nX;
-    ctx.fillStyle = '#3a4260'; ctx.font = '9px JetBrains Mono, monospace';
-    ctx.textAlign = 'center';
-    ctx.fillText(fmtN(v), x, pad.t + ph + 14);
-  }
-
-  // Zero line
-  if (yMin < 0 && yMax > 0) {
-    const y0 = pad.t + ph * yMax / (yMax - yMin);
-    ctx.strokeStyle = '#2a3045'; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
-    ctx.beginPath(); ctx.moveTo(pad.l, y0); ctx.lineTo(pad.l + pw, y0); ctx.stroke();
-    ctx.setLineDash([]);
-  }
-
-  // Border
-  ctx.strokeStyle = '#1e2535'; ctx.lineWidth = 1;
-  ctx.strokeRect(pad.l, pad.t, pw, ph);
-
-  const toX = v => pad.l + pw * (v - xMin) / (xMax - xMin);
-  const toY = v => pad.t + ph * (1 - (v - yMin) / (yMax - yMin));
-  return { toX, toY, pw, ph, pad };
-}
-
-function line(ctx, pts, ax, color, w = 1.5, dash = []) {
-  ctx.strokeStyle = color; ctx.lineWidth = w; ctx.setLineDash(dash);
-  ctx.beginPath();
-  let first = true;
-  for (const [x, y] of pts) {
-    if (!isFinite(y)) { first = true; continue; }
-    const px = ax.toX(x), py = ax.toY(y);
-    first ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
-    first = false;
-  }
-  ctx.stroke(); ctx.setLineDash([]);
-}
-
-function vline(ctx, x, ax, color) {
-  ctx.strokeStyle = color; ctx.lineWidth = 1; ctx.setLineDash([3, 4]);
-  ctx.beginPath(); ctx.moveTo(ax.toX(x), ax.pad.t); ctx.lineTo(ax.toX(x), ax.pad.t + ax.ph); ctx.stroke();
-  ctx.setLineDash([]);
-}
-
-function hline(ctx, y, ax, color) {
-  ctx.strokeStyle = color; ctx.lineWidth = 1; ctx.setLineDash([3, 4]);
-  ctx.beginPath(); ctx.moveTo(ax.pad.l, ax.toY(y)); ctx.lineTo(ax.pad.l + ax.pw, ax.toY(y)); ctx.stroke();
-  ctx.setLineDash([]);
-}
-
-function dot(ctx, x, y, ax, color, r = 4) {
-  ctx.fillStyle = color;
-  ctx.beginPath(); ctx.arc(ax.toX(x), ax.toY(y), r, 0, 2 * Math.PI); ctx.fill();
-}
-
-function lineLegend(ctx, x, y, color, label, dash = []) {
-  ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.setLineDash(dash);
-  ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + 18, y); ctx.stroke();
-  ctx.setLineDash([]);
-  ctx.fillStyle = '#5a6380'; ctx.font = '9px JetBrains Mono, monospace'; ctx.textAlign = 'left';
-  ctx.fillText(label, x + 22, y + 3);
-}
-
-function fmtN(v) {
-  const a = Math.abs(v);
-  if (a === 0) return '0';
-  if (a >= 1000) return v.toFixed(0);
-  if (a >= 100)  return v.toFixed(1);
-  if (a >= 1)    return v.toFixed(2);
-  if (a >= 0.01) return v.toFixed(3);
-  return v.toExponential(1);
-}
-
-function range(min, max, n = 200) {
-  const a = [];
-  for (let i = 0; i < n; i++) a.push(min + (max - min) * i / (n - 1));
-  return a;
-}
-
-function niceBounds(vals, padFrac = 0.08) {
-  let mn = Math.min(...vals), mx = Math.max(...vals);
-  const r = mx - mn || 1;
-  return [mn - r * padFrac, mx + r * padFrac];
-}
-
-// ════════════════════════════════════════════════════════════
-// RESIZE
-// ════════════════════════════════════════════════════════════
-function resizeAll() {
-  const area = document.querySelector('.chart-area');
-  const W = area.clientWidth - 28;
-  const Wh = (W - 10) / 2;
-
-  const pairs = [
-    ['c-payoff', W, 300], ['c-price', W, 300],
-    ['c-vol', W, 280], ['c-time', W, 280],
-    ['c-rho', W, 180],
-    ['c-paths', W, 260], ['c-hist', W, 220],
-  ];
-  pairs.forEach(([id, w, h]) => {
-    const c = document.getElementById(id);
-    if (c) { c.width = Math.max(320, w); c.height = h; }
+function netGat(s){
+  const r={delta:0,gamma:0,vega:0,theta:0,rho:0};
+  legs.forEach(l=>{
+    const sg=l.dir==='long'?1:-1;
+    if(l.type==='stock'){r.delta+=sg*l.N;return;}
+    const g=bsg(s,l.K,G.r,G.q,l.sigma,l.T,l.type);
+    r.delta+=sg*g.delta*l.N;r.gamma+=sg*g.gamma*l.N;
+    r.vega+=sg*g.vega*l.N;r.theta+=sg*g.theta*l.N;r.rho+=sg*g.rho*l.N;
   });
+  return r;
+}
+function findBE(ss,vals){
+  const bes=[];
+  for(let i=0;i<vals.length-1;i++){
+    if((vals[i]>=0)!==(vals[i+1]>=0)){
+      const t=-vals[i]/(vals[i+1]-vals[i]);
+      bes.push(ss[i]+t*(ss[i+1]-ss[i]));
+    }
+  }
+  return bes;
+}
 
-  ['c-delta','c-gamma','c-vega','c-theta'].forEach(id => {
-    const c = document.getElementById(id);
-    if (c) { c.width = Math.max(160, Wh); c.height = 220; }
-  });
+// ══════════════════════════════════
+// PRESETS
+// ══════════════════════════════════
+function r5(v){return Math.round(v/5)*5||v;}
+const PRESETS=[
+  ['Long Straddle',   ()=>[mkLeg('call','long',G.S,.20,1,1),mkLeg('put','long',G.S,.20,1,1)]],
+  ['Short Straddle',  ()=>[mkLeg('call','short',G.S,.20,1,1),mkLeg('put','short',G.S,.20,1,1)]],
+  ['Long Strangle',   ()=>[mkLeg('call','long',r5(G.S*1.05),.20,1,1),mkLeg('put','long',r5(G.S*.95),.20,1,1)]],
+  ['Short Strangle',  ()=>[mkLeg('call','short',r5(G.S*1.05),.20,1,1),mkLeg('put','short',r5(G.S*.95),.20,1,1)]],
+  ['Bull Call Spd',   ()=>[mkLeg('call','long',G.S,.20,1,1),mkLeg('call','short',r5(G.S*1.10),.20,1,1)]],
+  ['Bear Put Spd',    ()=>[mkLeg('put','long',G.S,.20,1,1),mkLeg('put','short',r5(G.S*.90),.20,1,1)]],
+  ['Iron Condor',     ()=>[mkLeg('put','long',r5(G.S*.80),.20,1,1),mkLeg('put','short',r5(G.S*.90),.20,1,1),mkLeg('call','short',r5(G.S*1.10),.20,1,1),mkLeg('call','long',r5(G.S*1.20),.20,1,1)]],
+  ['Butterfly',       ()=>[mkLeg('call','long',r5(G.S*.90),.20,1,1),mkLeg('call','short',G.S,.20,1,2),mkLeg('call','long',r5(G.S*1.10),.20,1,1)]],
+  ['Covered Call',    ()=>[mkLeg('stock','long',G.S,.20,1,100),mkLeg('call','short',r5(G.S*1.05),.20,1,1)]],
+  ['Protective Put',  ()=>[mkLeg('stock','long',G.S,.20,1,100),mkLeg('put','long',r5(G.S*.95),.20,1,1)]],
+  ['Calendar Spd',    ()=>[mkLeg('call','long',G.S,.20,2,1),mkLeg('call','short',G.S,.20,1,1)]],
+  ['Risk Reversal',   ()=>[mkLeg('call','long',r5(G.S*1.05),.20,1,1),mkLeg('put','short',r5(G.S*.95),.20,1,1)]],
+];
 
+function buildPresets(){
+  document.getElementById('preset-grid').innerHTML=PRESETS.map(([n],i)=>
+    `<div class="preset-btn" onclick="applyPreset(${i})">${n}</div>`).join('');
+}
+function applyPreset(i){
+  nextId=1;legs=PRESETS[i][1]();renderLegs();update();
+}
+
+// ══════════════════════════════════
+// LEG UI
+// ══════════════════════════════════
+function addLeg(type='call',dir='long',K,sigma=.20,T=1,N=1){
+  if(K===undefined)K=G.S;
+  legs.push(mkLeg(type,dir,K,sigma,T,N));renderLegs();update();
+}
+function removeLeg(id){legs=legs.filter(l=>l.id!==id);renderLegs();update();}
+function setLT(id,t){const l=legs.find(l=>l.id===id);if(l){l.type=t;renderLegs();update();}}
+function setLD(id,d){const l=legs.find(l=>l.id===id);if(l){l.dir=d;renderLegs();update();}}
+function setLP(id,p,v){const l=legs.find(l=>l.id===id);if(l){l[p]=parseFloat(v)||0;update();}}
+
+function renderLegs(){
+  document.getElementById('leg-count').textContent=legs.length;
+  document.getElementById('legs-wrap').innerHTML=legs.map((l,i)=>{
+    const col=COLORS[i%COLORS.length];
+    return`<div class="leg-row">
+      <div class="leg-top">
+        <div class="leg-dot" style="background:${col};box-shadow:0 0 5px ${col}88"></div>
+        <div class="ltbs">
+          <span class="ltb ${l.type==='call'?'t-call':''}" onclick="setLT(${l.id},'call')">CALL</span>
+          <span class="ltb ${l.type==='put'?'t-put':''}"   onclick="setLT(${l.id},'put')">PUT</span>
+          <span class="ltb ${l.type==='stock'?'t-stock':''}" onclick="setLT(${l.id},'stock')">STK</span>
+        </div>
+        <div class="ltbs">
+          <span class="ltb ${l.dir==='long'?'d-long':''}"  onclick="setLD(${l.id},'long')">L</span>
+          <span class="ltb ${l.dir==='short'?'d-short':''}" onclick="setLD(${l.id},'short')">S</span>
+        </div>
+        <button class="leg-del" onclick="removeLeg(${l.id})">×</button>
+      </div>
+      <div class="leg-bot">
+        <div class="lp"><label>Strike K</label><input type="number" value="${l.K}" step="1" onchange="setLP(${l.id},'K',this.value)"></div>
+        <div class="lp"><label>σ Vol</label><input type="number" value="${l.sigma}" step="0.01" min="0.001" onchange="setLP(${l.id},'sigma',this.value)"></div>
+        <div class="lp"><label>T (yr)</label><input type="number" value="${l.T}" step="0.1" min="0.01" onchange="setLP(${l.id},'T',this.value)"></div>
+        <div class="lp"><label>Size N</label><input type="number" value="${l.N}" step="1" min="1" onchange="setLP(${l.id},'N',this.value)"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════
+// GLOBAL SLIDERS
+// ══════════════════════════════════
+function syncG(k,v,fmt){
+  G[k]=parseFloat(v);
+  const el=document.getElementById('v-'+k);
+  if(fmt==='pct')el.textContent=(G[k]*100).toFixed(2)+'%';
+  else el.textContent=G[k]%1===0?G[k]:G[k].toFixed(1);
   update();
 }
-window.addEventListener('resize', () => { clearTimeout(window._rt); window._rt = setTimeout(resizeAll, 80); });
 
-// ════════════════════════════════════════════════════════════
+// ══════════════════════════════════
+// CANVAS UTILS
+// ══════════════════════════════════
+const P={l:58,r:20,t:22,b:26};
+const PH={l:52,r:10,t:14,b:20};
+
+function fn(v){const a=Math.abs(v);if(a===0)return'0';if(a>=1000)return v.toFixed(0);if(a>=100)return v.toFixed(1);if(a>=1)return v.toFixed(2);if(a>=.01)return v.toFixed(3);return v.toExponential(1);}
+function rng(mn,mx,n=200){const a=[];for(let i=0;i<n;i++)a.push(mn+(mx-mn)*i/(n-1));return a;}
+function nib(vals,pf=.08){let mn=Math.min(...vals),mx=Math.max(...vals);const r=mx-mn||1;return[mn-r*pf,mx+r*pf];}
+
+function axes(ctx,w,h,pad,xn,xx,yn,yx){
+  const pw=w-pad.l-pad.r,ph=h-pad.t-pad.b;
+  ctx.fillStyle='#0e1118';ctx.fillRect(0,0,w,h);
+  ctx.strokeStyle='#1c2030';ctx.lineWidth=1;
+  for(let i=0;i<=5;i++){
+    const y=pad.t+ph*i/5;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(pad.l+pw,y);ctx.stroke();
+    ctx.fillStyle='#3a4260';ctx.font='9px JetBrains Mono,monospace';ctx.textAlign='right';
+    ctx.fillText(fn(yx-(yx-yn)*i/5),pad.l-4,y+3);
+    const x=pad.l+pw*i/5;ctx.beginPath();ctx.moveTo(x,pad.t);ctx.lineTo(x,pad.t+ph);ctx.stroke();
+    ctx.fillStyle='#3a4260';ctx.textAlign='center';ctx.fillText(fn(xn+(xx-xn)*i/5),x,pad.t+ph+13);
+  }
+  if(yn<0&&yx>0){
+    const y0=pad.t+ph*yx/(yx-yn);
+    ctx.strokeStyle='#2a3045';ctx.lineWidth=1;ctx.setLineDash([4,4]);
+    ctx.beginPath();ctx.moveTo(pad.l,y0);ctx.lineTo(pad.l+pw,y0);ctx.stroke();ctx.setLineDash([]);
+  }
+  ctx.strokeStyle='#1e2535';ctx.lineWidth=1;ctx.strokeRect(pad.l,pad.t,pw,ph);
+  const tx=v=>pad.l+pw*(v-xn)/(xx-xn),ty=v=>pad.t+ph*(1-(v-yn)/(yx-yn));
+  return{tx,ty,pw,ph,pad};
+}
+function dl(ctx,pts,ax,col,w=1.5,dash=[]){
+  ctx.strokeStyle=col;ctx.lineWidth=w;ctx.setLineDash(dash);ctx.beginPath();let f=true;
+  for(const[x,y]of pts){if(!isFinite(y)){f=true;continue;}const px=ax.tx(x),py=ax.ty(y);f?ctx.moveTo(px,py):ctx.lineTo(px,py);f=false;}
+  ctx.stroke();ctx.setLineDash([]);
+}
+function vl(ctx,x,ax,col,dash=[3,4]){
+  ctx.strokeStyle=col;ctx.lineWidth=1;ctx.setLineDash(dash);ctx.beginPath();ctx.moveTo(ax.tx(x),ax.pad.t);ctx.lineTo(ax.tx(x),ax.pad.t+ax.ph);ctx.stroke();ctx.setLineDash([]);
+}
+function hl(ctx,y,ax,col){
+  ctx.strokeStyle=col;ctx.lineWidth=1;ctx.setLineDash([3,4]);ctx.beginPath();ctx.moveTo(ax.pad.l,ax.ty(y));ctx.lineTo(ax.pad.l+ax.pw,ax.ty(y));ctx.stroke();ctx.setLineDash([]);
+}
+function dot(ctx,x,y,ax,col,r=4){ctx.fillStyle=col;ctx.beginPath();ctx.arc(ax.tx(x),ax.ty(y),r,0,2*Math.PI);ctx.fill();}
+function gc(id){const c=document.getElementById(id);return{c,ctx:c.getContext('2d'),w:c.width,h:c.height};}
+
+// ══════════════════════════════════
 // MAIN UPDATE
-// ════════════════════════════════════════════════════════════
-function update() {
-  const { S, K, r, q, sigma, T, N, type, dir } = st;
-  const sign = dir === 'long' ? 1 : -1;
-  const price = bsPrice(S, K, r, q, sigma, T, type);
-  const g = bsGreeks(S, K, r, q, sigma, T, type);
-  const intr = type === 'call' ? Math.max(0, S - K) : Math.max(0, K - S);
-  const tv = Math.max(0, price - intr);
+// ══════════════════════════════════
+function update(){
+  if(!legs.length){
+    document.getElementById('net-val').textContent='–';
+    document.getElementById('net-val').className='net-val zero';
+    document.getElementById('net-desc').textContent='Add legs below';
+    document.getElementById('net-greeks').innerHTML='';
+    document.getElementById('be-row').innerHTML='';
+    document.getElementById('mp-row').innerHTML='';
+    return;
+  }
+  const ss=rng(G.S*.38,G.S*1.82);
+  const pays=ss.map(s=>netPay(s));
+  const prem=netPrem();
+  const profs=pays.map(p=>p-prem);
+  const bes=findBE(ss,profs);
 
-  document.getElementById('disp-price').textContent = (sign * price * N).toFixed(4);
-  document.getElementById('disp-sub').textContent =
-    `Intrinsic ${intr.toFixed(4)}  ·  Time val ${tv.toFixed(4)}`;
+  const g=netGat(G.S);
+  const nv=document.getElementById('net-val');
+  nv.textContent=(prem>=0?'+':'')+prem.toFixed(4);
+  nv.className='net-val '+(prem>.001?'debit':prem<-.001?'credit':'zero');
+  document.getElementById('net-desc').textContent=prem>.001?'Debit — you pay to enter':prem<-.001?'Credit — you receive on entry':'Near zero-cost position';
 
-  document.getElementById('mini-greeks').innerHTML = [
-    ['Δ', (sign * g.delta).toFixed(3)],
-    ['Γ', g.gamma.toFixed(4)],
-    ['ν', (sign * g.vega).toFixed(3)],
-    ['Θ', (sign * g.theta).toFixed(5)],
-    ['ρ', (sign * g.rho).toFixed(4)],
-  ].map(([l, v]) => `<div class="mg"><div class="mg-l">${l}</div><div class="mg-v">${v}</div></div>`).join('');
+  document.getElementById('net-greeks').innerHTML=[['Δ',g.delta.toFixed(3)],['Γ',g.gamma.toFixed(4)],['ν',g.vega.toFixed(3)],['Θ',g.theta.toFixed(4)],['ρ',g.rho.toFixed(3)]]
+    .map(([l,v])=>`<div class="ng"><div class="ng-l">${l}</div><div class="ng-v">${v}</div></div>`).join('');
 
-  // Charts only update if their panel is active
-  const activePanel = document.querySelector('.panel.active')?.id;
+  const beEl=document.getElementById('be-row');
+  beEl.innerHTML=bes.length?'Breakeven: '+bes.map(b=>`<b>${b.toFixed(2)}</b>`).join(' · '):'';
 
-  drawPayoff(); // always keep payoff ready
-  if (activePanel === 'tab-1') drawPriceVsS();
-  if (activePanel === 'tab-2') drawGreeks();
-  if (activePanel === 'tab-3') drawVolTime();
-  if (activePanel === 'tab-5') drawSanity();
+  const maxP=Math.max(...profs),minP=Math.min(...profs);
+  const mpEl=document.getElementById('mp-row');
+  const mpStr=isFinite(maxP)&&maxP<1e9?`<b>+${maxP.toFixed(2)}</b>`:'<b>∞</b>';
+  const mlStr=isFinite(minP)&&minP>-1e9?`<i>${minP.toFixed(2)}</i>`:'<i>−∞</i>';
+  mpEl.innerHTML=`Max P/L: ${mpStr} / ${mlStr}`;
+
+  const ap=document.querySelector('.panel.active')?.id;
+  drawPayoff(ss,pays,profs,bes,prem);
+  if(ap==='tab-1')drawPriceVsS(ss);
+  if(ap==='tab-2')drawGreeks(ss);
+  if(ap==='tab-3')drawVolTime();
+  if(ap==='tab-5')drawSanity();
 }
 
-// ════════════════════════════════════════════════════════════
-// CHART: PAYOFF
-// ════════════════════════════════════════════════════════════
-function drawPayoff() {
-  const { S, K, r, q, sigma, T, N, type, dir } = st;
-  const sign = dir === 'long' ? 1 : -1;
-  const prem = bsPrice(S, K, r, q, sigma, T, type);
-  const { c, ctx, w, h } = getCanvas('c-payoff');
-  const ss = range(S * 0.35, S * 1.85);
-  const payoffs = ss.map(s => sign * (type === 'call' ? Math.max(0, s - K) : Math.max(0, K - s)) * N);
-  const profs   = payoffs.map(p => p - sign * prem * N);
+// ══════════════════════════════════
+// PAYOFF
+// ══════════════════════════════════
+function drawPayoff(ss,pays,profs,bes,prem){
+  const {ctx,w,h}=gc('c-payoff');
+  const all=[...pays,...profs,0];
+  legs.forEach(l=>ss.forEach(s=>all.push(legPay(l,s))));
+  const [yn,yx]=nib(all);
+  const ax=axes(ctx,w,h,P,ss[0],ss[ss.length-1],yn,yx);
 
-  const [yMin, yMax] = niceBounds([...payoffs, ...profs]);
-  const ax = buildAxes(ctx, w, h, PAD_MAIN, ss[0], ss[ss.length - 1], yMin, yMax);
+  // Per-leg payoffs (dim)
+  legs.forEach((l,i)=>{
+    const col=COLORS[i%COLORS.length];
+    dl(ctx,ss.map(s=>[s,legPay(l,s)]),ax,col+'44',1,[4,4]);
+  });
 
-  line(ctx, ss.map((s, i) => [s, payoffs[i]]), ax, '#4fc3f7', 2);
-  line(ctx, ss.map((s, i) => [s, profs[i]]),   ax, '#69f0ae', 1.5, [5, 3]);
-  vline(ctx, S, ax, '#ffab40');
-  hline(ctx, 0, ax, '#2a3045');
-  dot(ctx, S, sign * (type === 'call' ? Math.max(0, S - K) : Math.max(0, K - S)) * N, ax, '#ffab40');
+  // Net payoff (white-ish)
+  dl(ctx,ss.map((s,i)=>[s,pays[i]]),ax,'#c8d0e088',2);
+  // Net profit (green)
+  dl(ctx,ss.map((s,i)=>[s,profs[i]]),ax,'#69f0ae',2,[]);
+
+  // Zero
+  hl(ctx,0,ax,'#2a3045');
+  // Spot
+  vl(ctx,G.S,ax,'#ffab40');
+
+  // Break-evens
+  bes.forEach(be=>{
+    vl(ctx,be,ax,'#69f0ae66');
+    if(ax.tx(be)>P.l&&ax.tx(be)<w-P.r){
+      ctx.fillStyle='#69f0ae';ctx.font='9px JetBrains Mono,monospace';ctx.textAlign='left';
+      ctx.fillText('BE:'+be.toFixed(1),Math.min(ax.tx(be)+3,w-P.r-55),P.t+11);
+    }
+  });
+
+  // Spot dot
+  const spotIdx=Math.round(ss.length/2);
+  dot(ctx,G.S,profs[spotIdx],ax,'#ffab40');
 
   // Legend
-  lineLegend(ctx, PAD_MAIN.l + 8, PAD_MAIN.t + 10, '#4fc3f7', 'Payoff');
-  lineLegend(ctx, PAD_MAIN.l + 8, PAD_MAIN.t + 22, '#69f0ae', 'Profit', [5, 3]);
-  lineLegend(ctx, PAD_MAIN.l + 8, PAD_MAIN.t + 34, '#ffab40', 'Spot S');
+  document.getElementById('payoff-legend').innerHTML=
+    legs.map((l,i)=>`<div class="ll"><div class="ll-line" style="background:${COLORS[i%COLORS.length]}88;border:1px dashed ${COLORS[i%COLORS.length]}88"></div>${l.dir==='long'?'L':'S'} ${l.type.toUpperCase()} K=${l.K} ×${l.N}</div>`).join('')+
+    `<div class="ll"><div class="ll-line" style="background:#c8d0e088"></div>Net Payoff</div>`+
+    `<div class="ll"><div class="ll-line" style="background:#69f0ae"></div>Net Profit</div>`;
 }
 
-// ════════════════════════════════════════════════════════════
-// CHART: PRICE vs S
-// ════════════════════════════════════════════════════════════
-function drawPriceVsS() {
-  const { S, K, r, q, sigma, T, N, type, dir } = st;
-  const sign = dir === 'long' ? 1 : -1;
-  const { c, ctx, w, h } = getCanvas('c-price');
-  const ss = range(S * 0.35, S * 1.85);
-  const prices = ss.map(s => sign * bsPrice(s, K, r, q, sigma, T, type) * N);
-  const intrs  = ss.map(s => sign * (type === 'call' ? Math.max(0, s - K) : Math.max(0, K - S)) * N);
-
-  const [yMin, yMax] = niceBounds([...prices, 0]);
-  const ax = buildAxes(ctx, w, h, PAD_MAIN, ss[0], ss[ss.length - 1], yMin, yMax);
-
-  line(ctx, ss.map((s, i) => [s, intrs[i]]), ax, '#2a3a50', 1.5, [4, 3]);
-  line(ctx, ss.map((s, i) => [s, prices[i]]), ax, '#4fc3f7', 2);
-  vline(ctx, S, ax, '#ffab40');
-  const curP = sign * bsPrice(S, K, r, q, sigma, T, type) * N;
-  dot(ctx, S, curP, ax, '#ffab40');
-
-  lineLegend(ctx, PAD_MAIN.l + 8, PAD_MAIN.t + 10, '#4fc3f7', 'BS Price');
-  lineLegend(ctx, PAD_MAIN.l + 8, PAD_MAIN.t + 22, '#2a3a50', 'Intrinsic', [4, 3]);
+// ══════════════════════════════════
+// PRICE vs S
+// ══════════════════════════════════
+function drawPriceVsS(ss){
+  const {ctx,w,h}=gc('c-price');
+  const prices=ss.map(s=>netPrice(s));
+  const all=[...prices,0];
+  legs.forEach(l=>ss.forEach(s=>all.push(legPrice(l,s))));
+  const [yn,yx]=nib(all);
+  const ax=axes(ctx,w,h,P,ss[0],ss[ss.length-1],yn,yx);
+  legs.forEach((l,i)=>dl(ctx,ss.map(s=>[s,legPrice(l,s)]),ax,COLORS[i%COLORS.length]+'44',1,[4,4]));
+  dl(ctx,ss.map((s,i)=>[s,prices[i]]),ax,'#4fc3f7',2.5);
+  vl(ctx,G.S,ax,'#ffab40');
+  dot(ctx,G.S,netPrice(G.S),ax,'#ffab40');
 }
 
-// ════════════════════════════════════════════════════════════
-// CHART: GREEKS
-// ════════════════════════════════════════════════════════════
-function drawGreeks() {
-  const { S, K, r, q, sigma, T, N, type, dir } = st;
-  const sign = dir === 'long' ? 1 : -1;
-  const ss = range(S * 0.35, S * 1.85);
-
-  const greekConf = [
-    { id: 'c-delta', key: 'delta', color: '#4fc3f7', sign },
-    { id: 'c-gamma', key: 'gamma', color: '#ce93d8', sign: 1 },
-    { id: 'c-vega',  key: 'vega',  color: '#26c6da', sign },
-    { id: 'c-theta', key: 'theta', color: '#ff5252', sign },
-  ];
-
-  greekConf.forEach(({ id, key, color, sign: sg }) => {
-    const { c, ctx, w, h } = getCanvas(id);
-    const vals = ss.map(s => sg * bsGreeks(s, K, r, q, sigma, T, type)[key] * N);
-    const [yMin, yMax] = niceBounds(vals);
-    const ax = buildAxes(ctx, w, h, PAD_HALF, ss[0], ss[ss.length - 1], yMin, yMax);
-    line(ctx, ss.map((s, i) => [s, vals[i]]), ax, color, 2);
-    vline(ctx, S, ax, '#ffab40');
-    const curV = sg * bsGreeks(S, K, r, q, sigma, T, type)[key] * N;
-    dot(ctx, S, curV, ax, '#ffab40', 3);
+// ══════════════════════════════════
+// GREEKS
+// ══════════════════════════════════
+function drawGreeks(ss){
+  [
+    {id:'c-delta',k:'delta',c:'#4fc3f7'},
+    {id:'c-gamma',k:'gamma',c:'#ce93d8'},
+    {id:'c-vega', k:'vega', c:'#26c6da'},
+    {id:'c-theta',k:'theta',c:'#ff5252'},
+  ].forEach(({id,k,c})=>{
+    const {ctx,w,h}=gc(id);
+    const vals=ss.map(s=>netGat(s)[k]);
+    const [yn,yx]=nib(vals);
+    const ax=axes(ctx,w,h,PH,ss[0],ss[ss.length-1],yn,yx);
+    dl(ctx,ss.map((s,i)=>[s,vals[i]]),ax,c,2);
+    vl(ctx,G.S,ax,'#ffab40');
+    dot(ctx,G.S,netGat(G.S)[k],ax,'#ffab40',3);
   });
-
-  // Rho (wide)
   {
-    const { c, ctx, w, h } = getCanvas('c-rho');
-    const vals = ss.map(s => sign * bsGreeks(s, K, r, q, sigma, T, type).rho * N);
-    const [yMin, yMax] = niceBounds(vals);
-    const ax = buildAxes(ctx, w, h, PAD_MAIN, ss[0], ss[ss.length - 1], yMin, yMax);
-    line(ctx, ss.map((s, i) => [s, vals[i]]), ax, '#ffab40', 2);
-    vline(ctx, S, ax, '#ff8f00');
-    dot(ctx, S, sign * bsGreeks(S, K, r, q, sigma, T, type).rho * N, ax, '#ff8f00');
+    const {ctx,w,h}=gc('c-rho');
+    const vals=ss.map(s=>netGat(s).rho);
+    const [yn,yx]=nib(vals);
+    const ax=axes(ctx,w,h,P,ss[0],ss[ss.length-1],yn,yx);
+    dl(ctx,ss.map((s,i)=>[s,vals[i]]),ax,'#ffab40',2);
+    vl(ctx,G.S,ax,'#ff8f00');
+    dot(ctx,G.S,netGat(G.S).rho,ax,'#ff8f00');
   }
 }
 
-// ════════════════════════════════════════════════════════════
-// CHART: VOL + TIME
-// ════════════════════════════════════════════════════════════
-function drawVolTime() {
-  const { S, K, r, q, sigma, T, N, type, dir } = st;
-  const sign = dir === 'long' ? 1 : -1;
+// ══════════════════════════════════
+// VOL / TIME
+// ══════════════════════════════════
+function drawVolTime(){
+  if(!legs.length)return;
+  const optLegs=legs.filter(l=>l.type!=='stock');
+  const maxSig=optLegs.length?Math.max(...optLegs.map(l=>l.sigma)):.20;
+  const maxT=optLegs.length?Math.max(...optLegs.map(l=>l.T)):1;
 
-  // Vol sensitivity
+  const sigR=rng(.01,1.5);
+  const sigP=sigR.map(sc=>legs.reduce((a,l)=>{
+    if(l.type==='stock')return a;
+    const sg=l.dir==='long'?1:-1;
+    return a+sg*bsp(G.S,l.K,G.r,G.q,Math.max(.001,l.sigma*(sc/maxSig)),l.T,l.type)*l.N;
+  },0));
   {
-    const { c, ctx, w, h } = getCanvas('c-vol');
-    const sigs = range(0.01, 1.0);
-    const prices = sigs.map(sig => sign * bsPrice(S, K, r, q, sig, T, type) * N);
-    const [yMin, yMax] = niceBounds([...prices, 0]);
-    const ax = buildAxes(ctx, w, h, PAD_MAIN, 0.01, 1.0, yMin, yMax);
-    line(ctx, sigs.map((sig, i) => [sig, prices[i]]), ax, '#26c6da', 2);
-    vline(ctx, sigma, ax, '#ffab40');
-    dot(ctx, sigma, sign * bsPrice(S, K, r, q, sigma, T, type) * N, ax, '#ffab40');
+    const {ctx,w,h}=gc('c-vol');
+    const [yn,yx]=nib([...sigP,0]);
+    const ax=axes(ctx,w,h,P,.01,1.5,yn,yx);
+    dl(ctx,sigR.map((s,i)=>[s,sigP[i]]),ax,'#26c6da',2);
+    vl(ctx,maxSig,ax,'#ffab40');
+    const ci=Math.round((maxSig-.01)/1.49*(sigR.length-1));
+    if(ci>=0&&ci<sigP.length)dot(ctx,maxSig,sigP[ci],ax,'#ffab40');
   }
 
-  // Time sensitivity
+  const tR=rng(.01,4);
+  const tP=tR.map(tc=>legs.reduce((a,l)=>{
+    if(l.type==='stock')return a;
+    const sg=l.dir==='long'?1:-1;
+    return a+sg*bsp(G.S,l.K,G.r,G.q,l.sigma,Math.max(.001,l.T*(tc/maxT)),l.type)*l.N;
+  },0));
   {
-    const { c, ctx, w, h } = getCanvas('c-time');
-    const ts = range(0.01, 3.0);
-    const prices = ts.map(t => sign * bsPrice(S, K, r, q, sigma, t, type) * N);
-    const [yMin, yMax] = niceBounds([...prices, 0]);
-    const ax = buildAxes(ctx, w, h, PAD_MAIN, 0.01, 3.0, yMin, yMax);
-    line(ctx, ts.map((t, i) => [t, prices[i]]), ax, '#ce93d8', 2);
-    vline(ctx, T, ax, '#ffab40');
-    dot(ctx, T, sign * bsPrice(S, K, r, q, sigma, T, type) * N, ax, '#ffab40');
+    const {ctx,w,h}=gc('c-time');
+    const [yn,yx]=nib([...tP,0]);
+    const ax=axes(ctx,w,h,P,.01,4,yn,yx);
+    dl(ctx,tR.map((t,i)=>[t,tP[i]]),ax,'#ce93d8',2);
+    vl(ctx,maxT,ax,'#ffab40');
+    const ci=Math.round((maxT-.01)/3.99*(tR.length-1));
+    if(ci>=0&&ci<tP.length)dot(ctx,maxT,tP[ci],ax,'#ffab40');
   }
 }
 
-// ════════════════════════════════════════════════════════════
+// ══════════════════════════════════
 // MONTE CARLO
-// ════════════════════════════════════════════════════════════
-function boxMuller() {
-  let u;
-  do { u = Math.random(); } while (u === 0);
-  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * Math.random());
-}
+// ══════════════════════════════════
+function bm(){let u;do{u=Math.random();}while(u===0);return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*Math.random());}
 
-function runMC() {
-  const { S, K, r, q, sigma, T, N, type, dir } = st;
-  const sign = dir === 'long' ? 1 : -1;
-  const nP = Math.min(5000, Math.max(10, parseInt(document.getElementById('mc-paths').value) || 300));
-  const nS = Math.min(1000, Math.max(10, parseInt(document.getElementById('mc-steps').value) || 100));
-  const dt = T / nS;
-  const drift = (r - q - 0.5 * sigma * sigma) * dt;
-  const diff  = sigma * Math.sqrt(dt);
-  const disc  = Math.exp(-r * T);
+function runMC(){
+  if(!legs.length)return;
+  const nP=Math.min(5000,Math.max(10,parseInt(document.getElementById('mc-paths').value)||500));
+  const nS=Math.min(1000,Math.max(10,parseInt(document.getElementById('mc-steps').value)||100));
+  const mcT=Math.max(.01,parseFloat(document.getElementById('mc-T').value)||1);
+  const optLegs=legs.filter(l=>l.type!=='stock');
+  const avgSig=optLegs.length?optLegs.reduce((a,l)=>a+l.sigma,0)/optLegs.length:.20;
+  const dt=mcT/nS,disc=Math.exp(-G.r*mcT);
+  const prem=netPrem();
 
-  const paths = [];
-  const terminals = [];
-
-  for (let p = 0; p < nP; p++) {
-    let s = S;
-    const path = [s];
-    for (let step = 0; step < nS; step++) {
-      s *= Math.exp(drift + diff * boxMuller());
-      path.push(s);
-    }
+  const paths=[],terminals=[];
+  for(let p=0;p<nP;p++){
+    let s=G.S;const path=[s];
+    for(let i=0;i<nS;i++){s*=Math.exp((G.r-G.q-.5*avgSig*avgSig)*dt+avgSig*Math.sqrt(dt)*bm());path.push(s);}
     paths.push(path);
-    const payoff = type === 'call' ? Math.max(0, s - K) : Math.max(0, K - s);
-    terminals.push(sign * disc * payoff * N);
+    const netP=legs.reduce((a,l)=>{
+      const sg=l.dir==='long'?1:-1;
+      if(l.type==='stock')return a+sg*(s-G.S)*l.N;
+      return a+sg*disc*(l.type==='call'?Math.max(0,s-l.K):Math.max(0,l.K-s))*l.N;
+    },0);
+    terminals.push(netP-prem);
   }
 
-  const mcVal = terminals.reduce((a, b) => a + b, 0) / nP;
-  const bsVal = sign * bsPrice(S, K, r, q, sigma, T, type) * N;
-  const variance = terminals.reduce((a, b) => a + b * b, 0) / nP - mcVal * mcVal;
-  const stderr = Math.sqrt(Math.max(0, variance) / nP);
+  const mean=terminals.reduce((a,b)=>a+b,0)/nP;
+  const v2=terminals.reduce((a,b)=>a+b*b,0)/nP-mean*mean;
+  const se=Math.sqrt(Math.max(0,v2)/nP);
+  const pct=terminals.filter(v=>v>0).length/nP*100;
+  const p5=terminals.slice().sort((a,b)=>a-b)[Math.floor(nP*.05)];
 
-  // Stats
-  const statsEl = document.getElementById('mc-stats');
-  statsEl.innerHTML = [
-    ['MC Value',  mcVal.toFixed(5),   '#69f0ae'],
-    ['BS Value',  bsVal.toFixed(5),   '#4fc3f7'],
-    ['Diff',      (mcVal - bsVal).toFixed(5), Math.abs(mcVal - bsVal) < 0.1 ? '#69f0ae' : '#ffab40'],
-    ['Std Err',   stderr.toFixed(5),  '#5a6380'],
-    ['Paths',     nP,                 '#5a6380'],
-  ].map(([l, v, col]) => `<div class="mc-stat"><div class="sl">${l}</div><div class="sv" style="color:${col}">${v}</div></div>`).join('');
+  document.getElementById('mc-stats').innerHTML=[
+    ['E[P&L]',mean.toFixed(4),'#69f0ae'],
+    ['Std Err',se.toFixed(4),'#5a6380'],
+    ['% Profit',pct.toFixed(1)+'%',pct>50?'#69f0ae':'#ff5252'],
+    ['VaR 5%',p5.toFixed(4),'#ff5252'],
+    ['N paths',nP,'#5a6380'],
+  ].map(([l,v,c])=>`<div class="mc-stat"><div class="sl">${l}</div><div class="sv" style="color:${c}">${v}</div></div>`).join('');
 
   // Paths chart
   {
-    const { c, ctx, w, h } = getCanvas('c-paths');
-    const allS = paths.flat();
-    const [yMin, yMax] = niceBounds(allS, 0.02);
-    const ax = buildAxes(ctx, w, h, PAD_MAIN, 0, T, yMin, yMax);
-
-    const show = Math.min(80, nP);
-    for (let p = 0; p < show; p++) {
-      const path = paths[p];
-      const alpha = Math.floor(40 + 80 * Math.random()).toString(16).padStart(2, '0');
-      ctx.strokeStyle = '#4fc3f7' + alpha;
-      ctx.lineWidth = 0.6;
-      ctx.setLineDash([]);
-      ctx.beginPath();
-      path.forEach((s, i) => {
-        const px = ax.toX(T * i / nS), py = ax.toY(s);
-        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
-      });
+    const {ctx,w,h}=gc('c-paths');
+    const all=paths.flat();const [yn,yx]=nib(all,.02);
+    const ax=axes(ctx,w,h,P,0,mcT,yn,yx);
+    const show=Math.min(80,nP);
+    for(let p=0;p<show;p++){
+      const al=Math.floor(20+55*Math.random()).toString(16).padStart(2,'0');
+      ctx.strokeStyle='#4fc3f7'+al;ctx.lineWidth=.6;ctx.setLineDash([]);
+      ctx.beginPath();paths[p].forEach((s,i)=>{const px=ax.tx(mcT*i/nS),py=ax.ty(s);i===0?ctx.moveTo(px,py):ctx.lineTo(px,py);});
       ctx.stroke();
     }
-
-    // Strike line
-    if (K >= yMin && K <= yMax) {
-      hline(ctx, K, ax, '#ffab40');
-      ctx.fillStyle = '#ffab40'; ctx.font = '9px JetBrains Mono, monospace';
-      ctx.textAlign = 'left';
-      ctx.fillText('K=' + K, ax.toX(T) + 2, ax.toY(K) - 3);
-    }
-
-    // S0 dot
-    dot(ctx, 0, S, ax, '#69f0ae', 3);
+    // Strike lines
+    [...new Set(legs.filter(l=>l.type!=='stock').map(l=>l.K))].forEach((K,i)=>{
+      if(K>=yn&&K<=yx){
+        hl(ctx,K,ax,'#ffab4055');
+        ctx.fillStyle='#ffab40';ctx.font='9px JetBrains Mono,monospace';ctx.textAlign='left';
+        ctx.fillText('K='+K,ax.tx(mcT)+2,ax.ty(K)-3);
+      }
+    });
+    dot(ctx,0,G.S,ax,'#69f0ae',3);
   }
 
   // Histogram
   {
-    const { c, ctx, w, h } = getCanvas('c-hist');
-    const nBins = 50;
-    const tMin = Math.min(...terminals);
-    const tMax = Math.max(...terminals);
-    const bw = (tMax - tMin) / nBins || 1;
-    const bins = new Array(nBins).fill(0);
-    terminals.forEach(v => {
-      const i = Math.min(nBins - 1, Math.floor((v - tMin) / bw));
-      bins[i]++;
+    const {ctx,w,h}=gc('c-hist');
+    const nB=50,tMn=Math.min(...terminals),tMx=Math.max(...terminals);
+    const bw=(tMx-tMn)/nB||1;
+    const bins=new Array(nB).fill(0);
+    terminals.forEach(v=>{const i=Math.min(nB-1,Math.floor((v-tMn)/bw));bins[i]++;});
+    const mxC=Math.max(...bins);
+    const ax=axes(ctx,w,h,P,tMn,tMx,0,mxC*1.15);
+    bins.forEach((count,i)=>{
+      const x0=ax.tx(tMn+i*bw),x1=ax.tx(tMn+(i+1)*bw);
+      const y0=ax.ty(count),y1=ax.ty(0),bW=Math.max(1,x1-x0-1);
+      const col=(tMn+(i+.5)*bw)>=0?'#69f0ae':'#ff5252';
+      ctx.fillStyle=col+'44';ctx.fillRect(x0,y0,bW,y1-y0);
+      ctx.strokeStyle=col+'99';ctx.lineWidth=.8;ctx.strokeRect(x0,y0,bW,y1-y0);
     });
-    const maxCount = Math.max(...bins);
-    const ax = buildAxes(ctx, w, h, PAD_MAIN, tMin, tMax, 0, maxCount * 1.15);
-
-    bins.forEach((count, i) => {
-      const x0 = ax.toX(tMin + i * bw);
-      const x1 = ax.toX(tMin + (i + 1) * bw);
-      const y0 = ax.toY(count), y1 = ax.toY(0);
-      const barW = Math.max(1, x1 - x0 - 1);
-      const mid = tMin + (i + 0.5) * bw;
-      const col = mid >= 0 ? '#69f0ae' : '#ff5252';
-      ctx.fillStyle = col + '55';
-      ctx.fillRect(x0, y0, barW, y1 - y0);
-      ctx.strokeStyle = col + 'aa';
-      ctx.lineWidth = 0.8;
-      ctx.strokeRect(x0, y0, barW, y1 - y0);
-    });
-
-    // Mean line
-    vline(ctx, mcVal, ax, '#ffab40');
-    ctx.fillStyle = '#ffab40'; ctx.font = '9px JetBrains Mono, monospace';
-    ctx.textAlign = 'left';
-    ctx.fillText('μ=' + mcVal.toFixed(3), ax.toX(mcVal) + 3, PAD_MAIN.t + 12);
+    vl(ctx,mean,ax,'#ffab40');
+    vl(ctx,0,ax,'#2a3045');
+    ctx.fillStyle='#ffab40';ctx.font='9px JetBrains Mono,monospace';ctx.textAlign='left';
+    ctx.fillText('μ='+mean.toFixed(3),ax.tx(mean)+3,P.t+11);
   }
 }
 
-// ════════════════════════════════════════════════════════════
-// SANITY CHECKS
-// ════════════════════════════════════════════════════════════
-function drawSanity() {
-  const { S, K, r, q, sigma, T, type } = st;
-
-  const p_lowSig = bsPrice(S, K, r, q, 0.0001, T, type);
-  const p_lowT   = bsPrice(S, K, r, q, sigma, 0.0001, type);
-  const intr_fwd = type === 'call' ? Math.max(0, S*Math.exp(-q*T) - K*Math.exp(-r*T)) : Math.max(0, K*Math.exp(-r*T) - S*Math.exp(-q*T));
-  const intr_phys = type === 'call' ? Math.max(0, S - K) : Math.max(0, K - S);
-
-  const C = bsPrice(S, K, r, q, sigma, T, 'call');
-  const P = bsPrice(S, K, r, q, sigma, T, 'put');
-  const pcp_lhs = C - P;
-  const pcp_rhs = S*Math.exp(-q*T) - K*Math.exp(-r*T);
-
-  const g = bsGreeks(S, K, r, q, sigma, T, type);
-
-  const checks = [
-    {
-      name: 'σ → 0  ·  Price ≈ Intrinsic',
-      desc: `σ=0.0001 → ${p_lowSig.toFixed(5)}\nIntrinsic (fwd) = ${intr_fwd.toFixed(5)}`,
-      ok: Math.abs(p_lowSig - intr_fwd) < 0.05,
-    },
-    {
-      name: 'T → 0  ·  Price ≈ Intrinsic',
-      desc: `T=0.0001 → ${p_lowT.toFixed(5)}\nIntrinsic = ${intr_phys.toFixed(5)}`,
-      ok: Math.abs(p_lowT - intr_phys) < 0.05,
-    },
-    {
-      name: 'Put–Call Parity',
-      desc: `C−P = ${pcp_lhs.toFixed(6)}\nSe⁻ᵍᵀ−Ke⁻ʳᵀ = ${pcp_rhs.toFixed(6)}\nDiff = ${Math.abs(pcp_lhs-pcp_rhs).toExponential(1)}`,
-      ok: Math.abs(pcp_lhs - pcp_rhs) < 1e-6,
-    },
-    {
-      name: `Delta bounds  (${type})`,
-      desc: `Δ = ${g.delta.toFixed(6)}\nExpected: ${type==='call'?'[0, e⁻ᵍᵀ]':'[−e⁻ᵍᵀ, 0]'}`,
-      ok: type === 'call' ? (g.delta >= -1e-9 && g.delta <= Math.exp(-q*T) + 1e-9)
-                          : (g.delta >= -Math.exp(-q*T) - 1e-9 && g.delta <= 1e-9),
-    },
-    {
-      name: 'Gamma ≥ 0  (long both types)',
-      desc: `Γ = ${g.gamma.toFixed(8)}`,
-      ok: g.gamma >= -1e-12,
-    },
-    {
-      name: 'Vega ≥ 0  (long both types)',
-      desc: `ν = ${g.vega.toFixed(8)}`,
-      ok: g.vega >= -1e-12,
-    },
+// ══════════════════════════════════
+// SANITY
+// ══════════════════════════════════
+function drawSanity(){
+  const optLegs=legs.filter(l=>l.type!=='stock');
+  if(!optLegs.length){
+    document.getElementById('sanity-grid').innerHTML='<div class="sanity-item" style="grid-column:1/-1"><div class="sanity-name">No option legs</div><div class="sanity-val">Add a CALL or PUT leg to run checks.</div></div>';
+    document.getElementById('sanity-note').innerHTML='';return;
+  }
+  const l=optLegs[0];
+  const C=bsp(G.S,l.K,G.r,G.q,l.sigma,l.T,'call');
+  const Pp=bsp(G.S,l.K,G.r,G.q,l.sigma,l.T,'put');
+  const lhs=C-Pp,rhs=G.S*Math.exp(-G.q*l.T)-l.K*Math.exp(-G.r*l.T);
+  const ps0=bsp(G.S,l.K,G.r,G.q,.0001,l.T,l.type);
+  const pt0=bsp(G.S,l.K,G.r,G.q,l.sigma,.0001,l.type);
+  const if_=l.type==='call'?Math.max(0,G.S*Math.exp(-G.q*l.T)-l.K*Math.exp(-G.r*l.T)):Math.max(0,l.K*Math.exp(-G.r*l.T)-G.S*Math.exp(-G.q*l.T));
+  const ip=l.type==='call'?Math.max(0,G.S-l.K):Math.max(0,l.K-G.S);
+  const g=bsg(G.S,l.K,G.r,G.q,l.sigma,l.T,l.type);
+  const checks=[
+    {n:'σ→0: Price≈Intrinsic (fwd)',d:`σ→0: ${ps0.toFixed(6)}\nFwd intr: ${if_.toFixed(6)}`,ok:Math.abs(ps0-if_)<.05},
+    {n:'T→0: Price≈Intrinsic',d:`T→0: ${pt0.toFixed(6)}\nPhys intr: ${ip.toFixed(6)}`,ok:Math.abs(pt0-ip)<.05},
+    {n:'Put-Call Parity',d:`C−P: ${lhs.toFixed(8)}\nSe^−q−Ke^−r: ${rhs.toFixed(8)}\nErr: ${Math.abs(lhs-rhs).toExponential(1)}`,ok:Math.abs(lhs-rhs)<1e-6},
+    {n:`Delta bounds (${l.type})`,d:`Δ=${g.delta.toFixed(7)}\nExpect: ${l.type==='call'?'[0,e^{-q}]':'[-e^{-q},0]'}`,ok:l.type==='call'?(g.delta>=-1e-9&&g.delta<=Math.exp(-G.q*l.T)+1e-9):(g.delta>=-Math.exp(-G.q*l.T)-1e-9&&g.delta<=1e-9)},
+    {n:'Gamma ≥ 0 (always)',d:`Γ=${g.gamma.toFixed(9)}`,ok:g.gamma>=-1e-12},
+    {n:'Vega ≥ 0 (always)',d:`ν=${g.vega.toFixed(9)}`,ok:g.vega>=-1e-12},
   ];
-
-  const grid = document.getElementById('sanity-grid');
-  grid.innerHTML = checks.map(c => `
+  document.getElementById('sanity-grid').innerHTML=checks.map(c=>`
     <div class="sanity-item">
-      <div class="sanity-name">${c.name}</div>
-      <div class="sanity-val" style="white-space:pre">${c.desc}</div>
-      <div class="${c.ok ? 'sanity-ok' : 'sanity-fail'}">${c.ok ? '✓ PASS' : '✗ FAIL'}</div>
+      <div class="sanity-name">${c.n}</div><div class="sanity-val">${c.d}</div>
+      <div class="${c.ok?'s-ok':'s-fail'}">${c.ok?'✓ PASS':'✗ FAIL'}</div>
     </div>`).join('');
-
-  document.getElementById('sanity-note').innerHTML = `
-    <span style="color:var(--accent2)">Notes:</span>
-    Put–call parity holds to floating-point precision (&lt;10⁻⁶) by construction of BS.&nbsp;
-    σ→0 gives the forward intrinsic (discounted) because BS collapses to a digital step.&nbsp;
-    T→0 gives physical intrinsic since discounting → 1.&nbsp;
-    Delta of a call ∈ [0, e⁻ᵍᵀ] not [0,1] when q > 0 (dividend reduces risk-neutral probability).
-  `;
+  document.getElementById('sanity-note').innerHTML=`
+    <span style="color:var(--purple)">Note:</span> Checks on first option leg — K=${l.K}, σ=${l.sigma}, T=${l.T}, ${l.type}.
+    PCP holds to floating-point precision by construction. σ→0 gives forward intrinsic; T→0 gives physical intrinsic.
+    Delta of a call ∈ [0, e^{−qT}], not [0,1], when q > 0 since the dividend reduces the risk-neutral drift.`;
 }
 
-// ════════════════════════════════════════════════════════════
-// TAB SWITCHING
-// ════════════════════════════════════════════════════════════
-function showTab(i) {
-  document.querySelectorAll('.panel').forEach((p, j) => {
-    p.className = 'panel' + (j === i ? ' active' : '');
-  });
-  document.querySelectorAll('.tab').forEach((t, j) => {
-    t.className = 'tab' + (j === i ? ' active' : '');
-  });
-
-  // Lazy-render on switch
-  if (i === 0) drawPayoff();
-  if (i === 1) drawPriceVsS();
-  if (i === 2) drawGreeks();
-  if (i === 3) drawVolTime();
-  if (i === 4) runMC();
-  if (i === 5) drawSanity();
+// ══════════════════════════════════
+// TABS
+// ══════════════════════════════════
+function showTab(i){
+  document.querySelectorAll('.panel').forEach((p,j)=>{p.className='panel'+(j===i?' active':'');});
+  document.querySelectorAll('.tab').forEach((t,j)=>{t.className='tab'+(j===i?' active':'');});
+  const ss=rng(G.S*.38,G.S*1.82);
+  if(i===0)update();
+  if(i===1)drawPriceVsS(ss);
+  if(i===2)drawGreeks(ss);
+  if(i===3)drawVolTime();
+  if(i===4)runMC();
+  if(i===5)drawSanity();
 }
 
-// ════════════════════════════════════════════════════════════
+// ══════════════════════════════════
+// RESIZE
+// ══════════════════════════════════
+function resizeAll(){
+  const area=document.querySelector('.chart-area');
+  const W=area.clientWidth-24,Wh=(W-10)/2;
+  [['c-payoff',W,300],['c-price',W,300],['c-vol',W,280],['c-time',W,280],['c-rho',W,180],['c-paths',W,260],['c-hist',W,220]].forEach(([id,w,h])=>{
+    const c=document.getElementById(id);if(c){c.width=Math.max(300,w);c.height=h;}
+  });
+  ['c-delta','c-gamma','c-vega','c-theta'].forEach(id=>{
+    const c=document.getElementById(id);if(c){c.width=Math.max(150,Wh);c.height=220;}
+  });
+  update();
+}
+window.addEventListener('resize',()=>{clearTimeout(window._rt);window._rt=setTimeout(resizeAll,80);});
+
+// ══════════════════════════════════
 // INIT
-// ════════════════════════════════════════════════════════════
+// ══════════════════════════════════
+buildPresets();
+legs.push(mkLeg('call','long',100,.20,1,1));
+renderLegs();
 resizeAll();
 </script>
 </body>
